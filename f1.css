@@ -33,9 +33,13 @@ button {
     display: none;
 }
 
-#message,
+#message {
+    font-size: 20px; 
+    margin-top: 20px;
+}
+
 #time {
-    font-size: 20px; margin-top: 20px;
-    font-size: 64px; margin: 10px 0;
+    font-size: 64px; 
+    margin: 10px 0;
 }
 
