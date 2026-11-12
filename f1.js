@@ -1,42 +1,87 @@
 //console.log("Game is connected!");
 
-//get elements from the index file
+// 1. Get all necessary elements from the HTML
 const lights = document.querySelectorAll('.light');
-const startbtn = document.getElementById('start-btn'); // Fixed ID to match HTML
+const startbtn = document.getElementById('start-btn');
 const message = document.getElementById('message');
+const resultBox = document.getElementById('result');
+const timeDisplay = document.getElementById('time');
+const bestDisplay = document.getElementById('best');
 
-startbtn.addEventListener('click', () => {
-    //this hides the start button and clears previous messages
+// 2. Setup a unified game state
+let gameState = 'IDLE'; // Can only be: 'IDLE', 'RUNNING', or 'REACT'
+let lightsOutTime = 0;
+let bestTime = Infinity;
+let sequenceInterval;
+let dropTimeout;
+
+// 3. Handle the START button click
+startbtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevents the click from bleeding through to the document
+    if (gameState !== 'IDLE') return; // Prevent double-clicks from messing up the timer
+    
+    gameState = 'RUNNING';
+    
+    // Reset the UI
     startbtn.classList.add('hidden');
+    resultBox.classList.add('hidden');
     message.textContent = "GET READY!";
-
-    //ensures all lights are turned off before the start
     lights.forEach(light => light.classList.remove('on'));
-
+    
     let lightIndex = 0;
 
-    //this turns on the light every 1 second
-    const turnOnLights = setInterval(() => {
+    // Start the light sequence
+    sequenceInterval = setInterval(() => {
         lights[lightIndex].classList.add('on');
         lightIndex++;
         
-        //when all lights are on, stop the timer
-        // THIS MUST REMAIN INSIDE THE INTERVAL BLOCK
         if (lightIndex === 5) {
-            clearInterval(turnOnLights);
+            clearInterval(sequenceInterval);
             message.textContent = "";
             
-            //generate random delay between 500ms and 3000ms
-            const randomDelay = Math.floor(Math.random() * 2500) + 500;
+            // Random delay between 0.5s and 3s
+            // New line: Wait is now strictly between 0.5 and 1.5 seconds
+            const randomDelay = Math.floor(Math.random() * 1000) + 500;
             
-            //turn off all lights after the delay
-            setTimeout(() => {
+            dropTimeout = setTimeout(() => {
                 lights.forEach(light => light.classList.remove('on'));
-
-                //temporarily bring back the start button for testing
-                //this will be removed when step 6 arrives
-                startbtn.classList.remove('hidden');
+                gameState = 'REACT'; // Game is now waiting for player reaction
+                lightsOutTime = Date.now();
             }, randomDelay);
         }
-    }, 1000); // The interval correctly closes here now
+    }, 1000);
+});
+
+// 4. Handle the player clicking the screen
+document.addEventListener('mousedown', (e) => {
+    if (e.target === startbtn) return; // Ignore clicks directly on the start button
+
+    if (gameState === 'RUNNING') {
+        // JUMP START - Player clicked while lights were turning on OR before they went out
+        clearInterval(sequenceInterval);
+        clearTimeout(dropTimeout);
+        
+        lights.forEach(light => light.classList.remove('on'));
+        message.textContent = "JUMP START! You clicked too early.";
+        
+        gameState = 'IDLE';
+        startbtn.textContent = "TRY AGAIN";
+        startbtn.classList.remove('hidden');
+    } 
+    else if (gameState === 'REACT') {
+        // VALID REACTION - Player clicked after lights went out
+        const reactionTime = Date.now() - lightsOutTime;
+        
+        if (reactionTime < bestTime) {
+            bestTime = reactionTime;
+        }
+        
+        timeDisplay.textContent = reactionTime + " ms";
+        bestDisplay.textContent = bestTime + " ms";
+        resultBox.classList.remove('hidden');
+        
+        gameState = 'IDLE';
+        startbtn.textContent = "TRY AGAIN";
+        startbtn.classList.remove('hidden');
+    }
 });
