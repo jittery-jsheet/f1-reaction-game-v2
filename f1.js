@@ -2,7 +2,7 @@
 
 //get elements from the index file
 const lights = document.querySelectorAll('.light');
-const startbtn = document.getElementById('startBtn'); // Fixed ID to match HTML
+const startbtn = document.getElementById('start-btn'); // Fixed ID to match HTML
 const message = document.getElementById('message');
 
 startbtn.addEventListener('click', () => {
