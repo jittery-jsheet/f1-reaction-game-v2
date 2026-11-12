@@ -1,28 +1,35 @@
-//console.log("Game is connected!");
-
 // 1. Get all necessary elements from the HTML
 const lights = document.querySelectorAll('.light');
-const startbtn = document.getElementById('start-btn');
+const startbtn = document.getElementById('start-btn'); // Matches your HTML ID
 const message = document.getElementById('message');
 const resultBox = document.getElementById('result');
 const timeDisplay = document.getElementById('time');
 const bestDisplay = document.getElementById('best');
 
-// 2. Setup a unified game state
-let gameState = 'IDLE'; // Can only be: 'IDLE', 'RUNNING', or 'REACT'
+// 2. Setup game state variables
+let gameState = 'IDLE';
 let lightsOutTime = 0;
-let bestTime = Infinity;
 let sequenceInterval;
 let dropTimeout;
+// --- LOCAL STORAGE: RETRIEVE DATA ---
+// Check the browser's memory for a saved score. If nothing is there, default to Infinity.
+let savedBest = localStorage.getItem('f1BestScore');
+let bestTime = savedBest ? parseInt(savedBest) : Infinity;
 
+// If a saved time exists, display it on the screen immediately when the page loads
+if (bestTime !== Infinity) {
+    bestDisplay.textContent = bestTime + " ms";
+    timeDisplay.textContent = "-"; 
+    resultBox.classList.remove('hidden');
+}
+// ------------------------------------
 // 3. Handle the START button click
 startbtn.addEventListener('click', (e) => {
-    e.stopPropagation(); // Prevents the click from bleeding through to the document
-    if (gameState !== 'IDLE') return; // Prevent double-clicks from messing up the timer
+    e.stopPropagation(); 
+    if (gameState !== 'IDLE') return; 
     
     gameState = 'RUNNING';
     
-    // Reset the UI
     startbtn.classList.add('hidden');
     resultBox.classList.add('hidden');
     message.textContent = "GET READY!";
@@ -30,7 +37,6 @@ startbtn.addEventListener('click', (e) => {
     
     let lightIndex = 0;
 
-    // Start the light sequence
     sequenceInterval = setInterval(() => {
         lights[lightIndex].classList.add('on');
         lightIndex++;
@@ -39,25 +45,22 @@ startbtn.addEventListener('click', (e) => {
             clearInterval(sequenceInterval);
             message.textContent = "";
             
-            // Random delay between 0.5s and 3s
-            // New line: Wait is now strictly between 0.5 and 1.5 seconds
+            // Beginner-friendly 0.5s to 1.5s delay
             const randomDelay = Math.floor(Math.random() * 1000) + 500;
             
             dropTimeout = setTimeout(() => {
                 lights.forEach(light => light.classList.remove('on'));
-                gameState = 'REACT'; // Game is now waiting for player reaction
+                gameState = 'REACT'; 
                 lightsOutTime = Date.now();
             }, randomDelay);
         }
     }, 1000);
 });
-
 // 4. Handle the player clicking the screen
 document.addEventListener('mousedown', (e) => {
-    if (e.target === startbtn) return; // Ignore clicks directly on the start button
+    if (e.target === startbtn) return; 
 
     if (gameState === 'RUNNING') {
-        // JUMP START - Player clicked while lights were turning on OR before they went out
         clearInterval(sequenceInterval);
         clearTimeout(dropTimeout);
         
@@ -69,13 +72,15 @@ document.addEventListener('mousedown', (e) => {
         startbtn.classList.remove('hidden');
     } 
     else if (gameState === 'REACT') {
-        // VALID REACTION - Player clicked after lights went out
         const reactionTime = Date.now() - lightsOutTime;
         
+        // --- LOCAL STORAGE: SAVE DATA ---
+        // If the new reaction time is faster than the saved best time, update it
         if (reactionTime < bestTime) {
             bestTime = reactionTime;
+            localStorage.setItem('f1BestScore', bestTime); // Save to the browser's digital locker!
         }
-        
+        // --------------------------------
         timeDisplay.textContent = reactionTime + " ms";
         bestDisplay.textContent = bestTime + " ms";
         resultBox.classList.remove('hidden');
